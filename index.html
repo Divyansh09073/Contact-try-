@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+            margin: 0 auto 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #generatedLink {
+            display: block;
+            margin-top: 15px;
+            font-size: 16px;
+            word-break: break-all;
+        }
+
+        #searchBar {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .contacts-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #contactList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #contactList li {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .contact-name {
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .contact-phone {
+            font-size: 16px;
+            color: #555;
+            margin-top: 5px;
+        }
+        
+        .copy-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            margin-top: 5px;
+        }
+
+        .copy-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>VCF Contact Viewer</h1>
+
+        <div id="uploadView" class="section">
+            <label for="vcfFile">VCF File Upload Karein:</label>
+            <input type="file" id="vcfFile" accept=".vcf">
+            <button onclick="generateLink()">Link Banayein</button>
+            <div id="linkContainer" style="display:none; margin-top: 20px;">
+                <p>Aapka link taiyar hai:</p>
+                <a id="generatedLink" href="#" target="_blank"></a>
+                <button onclick="copyLink()">Link Copy Karein</button>
+            </div>
+        </div>
+
+        <div id="contactsView" style="display:none;">
+            <div class="section">
+                <input type="text" id="searchBar" placeholder="Contacts search karein...">
+            </div>
+
+            <div class="contacts-list">
+                <h2>Contacts</h2>
+                <ul id="contactList"></ul>
+            </div>
+            <button onclick="goHome()">Nayi VCF file upload karein</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const vcfFile = document.getElementById('vcfFile');
+            const uploadView = document.getElementById('uploadView');
+            const contactsView = document.getElementById('contactsView');
+            const linkContainer = document.getElementById('linkContainer');
+            const generatedLink = document.getElementById('generatedLink');
+            const contactList = document.getElementById('contactList');
+            const searchBar = document.getElementById('searchBar');
+            
+            let allContacts = [];
+
+            // URL mein data hai ya nahi, check karna
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+
+            if (encodedData) {
+                // Link se contacts ko dikhana
+                try {
+                    const vcfContent = atob(decodeURIComponent(encodedData));
+                    allContacts = parseVcf(vcfContent);
+                    displayContacts(allContacts);
+                    uploadView.style.display = 'none';
+                    contactsView.style.display = 'block';
+                } catch (e) {
+                    alert('Link mein data kharab hai. Kripya sahi link ka upyog karein.');
+                    goHome();
+                }
+            } else {
+                // File upload UI dikhana
+                uploadView.style.display = 'block';
+                contactsView.style.display = 'none';
+            }
+
+            // VCF file ko read karke link banane ka function
+            window.generateLink = () => {
+                const file = vcfFile.files[0];
+                if (!file) {
+                    alert('Kripya ek VCF file chunein.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const vcfContent = e.target.result;
+                    const base64Encoded = btoa(vcfContent);
+                    const encodedUrl = encodeURIComponent(base64Encoded);
+                    const newUrl = `${window.location.origin}${window.location.pathname}?data=${encodedUrl}`;
+                    
+                    generatedLink.href = newUrl;
+                    generatedLink.textContent = newUrl;
+                    linkContainer.style.display = 'block';
+                };
+                reader.readAsText(file);
+            };
+
+            // VCF data ko parse karke contacts ka array banana
+            function parseVcf(vcfContent) {
+                const lines = vcfContent.split(/\r\n|\n/);
+                const contacts = [];
+                let currentContact = {};
+
+                lines.forEach(line => {
+                    if (line.startsWith('BEGIN:VCARD')) {
+                        currentContact = {};
+                    } else if (line.startsWith('FN:')) {
+                        currentContact.name = line.substring(3);
+                    } else if (line.startsWith('TEL;TYPE=cell:')) {
+                        currentContact.phone = line.substring(14).trim();
+                    } else if (line.startsWith('END:VCARD')) {
+                        if (currentContact.name && currentContact.phone) {
+                            contacts.push(currentContact);
+                        }
+                    }
+                });
+                return contacts;
+            }
+
+            // Contacts ko screen par display karna
+            function displayContacts(contacts) {
+                contactList.innerHTML = '';
+                if (contacts.length === 0) {
+                    contactList.innerHTML = '<li>Koi contact nahi mila.</li>';
+                    return;
+                }
+                
+                contacts.forEach(contact => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="contact-info">
+                            <span class="contact-name">${contact.name}</span>
+                            <span class="contact-phone">${contact.phone}</span>
+                        </div>
+                        <button class="copy-button" onclick="copyNumber('${contact.phone}')">Copy Number</button>
+                    `;
+                    contactList.appendChild(li);
+                });
+            }
+
+            // Search bar mein type karne par contacts ko filter karna
+            searchBar.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredContacts = allContacts.filter(contact => 
+                    contact.name.toLowerCase().includes(searchTerm) || 
+                    contact.phone.includes(searchTerm)
+                );
+                displayContacts(filteredContacts);
+            });
+
+            // Number copy karne ka function
+            window.copyNumber = (phoneNumber) => {
+                navigator.clipboard.writeText(phoneNumber).then(() => {
+                    alert(`Number copied: ${phoneNumber}`);
+                }).catch(err => {
+                    console.error('Failed to copy number: ', err);
+                });
+            };
+
+            // Link copy karne ka function
+            window.copyLink = () => {
+                const link = generatedLink.href;
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('Link successfully copied!');
+                }).catch(err => {
+                    console.error('Failed to copy link: ', err);
+                });
+            };
+
+            // Nayi file upload karne ke liye home page par vapas jaana
+            window.goHome = () => {
+                window.location.href = window.location.origin + window.location.pathname;
+            };
+        });
+    </script>
+</body>
+  </html>
