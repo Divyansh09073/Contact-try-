@@ -67,7 +67,7 @@
             font-size: 16px;
             word-break: break-all;
         }
-
+        
         #searchBar {
             width: 80%;
             padding: 10px;
@@ -180,7 +180,7 @@
             if (encodedData) {
                 // Link se contacts ko dikhana
                 try {
-                    const vcfContent = atob(decodeURIComponent(encodedData));
+                    const vcfContent = decodeURIComponent(atob(encodedData));
                     allContacts = parseVcf(vcfContent);
                     displayContacts(allContacts);
                     uploadView.style.display = 'none';
@@ -276,6 +276,7 @@
                     alert(`Number copied: ${phoneNumber}`);
                 }).catch(err => {
                     console.error('Failed to copy number: ', err);
+                    alert('Number copy karne mein dikkat aayi. Kripya manualy copy karein.');
                 });
             };
 
@@ -286,12 +287,18 @@
                     alert('Link successfully copied!');
                 }).catch(err => {
                     console.error('Failed to copy link: ', err);
+                    alert('Link copy karne mein dikkat aayi. Kripya manualy copy karein.');
                 });
             };
 
             // Nayi file upload karne ke liye home page par vapas jaana
             window.goHome = () => {
                 window.location.href = window.location.origin + window.location.pathname;
+            };
+        });
+    </script>
+</body>
+</html>hname;
             };
         });
     </script>
